@@ -363,9 +363,6 @@ document.addEventListener('keydown', function(event){
 document.addEventListener('keyup', function(event){
     Game.player.keysPressed[event.key] = false;
 });
-// document.addEventListener('mousemove', function(event) {
-//     Game.triangle.rotateTowardsMouse(event.clientX, event.clientY);
-// });
 document.addEventListener('DOMContentLoaded', function() {
     var canvas = document.createElement('canvas');
     canvas.width = window.innerWidth;
