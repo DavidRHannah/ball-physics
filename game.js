@@ -1,5 +1,5 @@
 class Ball {
-    constructor(color, x, y, r, vx, vy, gravity, bounce, air_resistance, kinetic_friction){
+    constructor(color, x, y, r, vx, vy, gravity, bounce, air_resistance, kinetic_friction, epsilon){
         this.color = color;
         this.x = x;
         this.y = y;
@@ -10,6 +10,7 @@ class Ball {
         this.bounce = bounce;
         this.air_resistance = air_resistance;
         this.kinetic_friction = kinetic_friction;
+        this.epsilon = epsilon;
         this.is_rolling = false;
     }
     applyPhysics(){
@@ -23,6 +24,12 @@ class Ball {
         if (this.is_rolling) {
             this.vx *= this.kinetic_friction;
             this.vy *= this.kinetic_friction;
+        }
+        if (Math.abs(this.vx) < epsilon){
+            vx = 0;   
+        }
+        if (this.vy < epsilon){
+            vy = 0;
         }
     }
     handleCollisions(){
@@ -54,9 +61,41 @@ class Ball {
         context.beginPath();
         context.arc(this.x, this.y, this.r, 0, Math.PI * 2);
         context.fillStyle = this.color;
-        context.fill();   
+        context.fill();
     }
-}
+};
+
+class Grid {
+    constructor(cell_size){
+        this.cell_size = cell_size;
+        this._grid = new Map();
+    }
+    getCellKey(x,y){
+        return `${Math.floor(x / this.cell_size)}, ${Math.floor(y / this.cell_size)}`;
+    }
+    addBall(ball){
+        let key = this.getCellKey(ball.x, ball.y);
+        if(!this._grid.has(key)) {
+            this._grid.set(key, []);
+        }
+        this._grid.get(key).push(ball);
+    }
+    getBallsInCell(x,y){
+        let key = this.getCellKey(x,y);
+        let balls = this._grid.get(key) || [];
+        for (let dx = -1; dx <= 1; dx++){
+            for (let dy = -1; dy <= 1; dy++){
+                if (dx === 0 && dy === 0){
+                    continue;
+                }
+                let adjacentKey = this.getCellKey(x+dx*this.cell_size, y+dy*this.cell_size);
+                balls = balls.concat(this._grid.get(adjacentKey) || []);
+            }
+        }
+        return balls;
+    }
+};
+
 
 function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
@@ -69,22 +108,24 @@ Game.maxFrameSkip = 10;
 Game.skipTicks = 1000 / Game.fps;
 
 Game.initialize = function() {
+    let cellSize = 30;
+    this.entityCount = 40;
     this.entities = [];
-    this.entityCount = 3;
+    this.grid = new Grid(cellSize);
     this.viewport = document.body;
 
     for (let i = 0; i < this.entityCount; i++){
         color = "white";
-        // r = getRandomArbitrary(4, 5);
-        r = 50;
+        r = 20;
         x = getRandomArbitrary(r, window.innerWidth);
         y = getRandomArbitrary(r, window.innerHeight);
         vx = getRandomArbitrary(-100,100);
         vy = getRandomArbitrary(-100,100);
-        gravity = 1;
+        gravity = 0;
         bounce = 0.6;
-        air_resistance = 0.99;
-        kinetic_friction = 0.99;
+        air_resistance = 1;
+        kinetic_friction = 1;
+        epsilon = 0;
 
         this.entities[i] = new Ball(color, x, y, r, vx, vy, gravity, bounce, air_resistance, kinetic_friction);
     }
@@ -94,47 +135,49 @@ Game.update = function() {
     for (let i = 0; i < this.entityCount; i++){
         this.entities[i].applyPhysics();
         this.entities[i].handleCollisions();
+        this.grid.addBall(this.entities[i]);
     }
-    for (let i = 0; i < this.entityCount; i++) {
-        for (let j = i + 1; j < this.entityCount; j++) {
-            let ball1 = this.entities[i];
-            let ball2 = this.entities[j];
-            
-            let dx = ball2.x - ball1.x;
-            let dy = ball2.y - ball1.y;
-            let distance = Math.sqrt(dx * dx + dy * dy);
-            let minDistance = ball1.r + ball2.r;
 
-            // Check for colliding balls
-            if (distance+1 <= minDistance) {
-                // normalize direction vector
-                let nx = dx / distance;
-                let ny = dy / distance;
+    for (let ball of this.entities){
+        let ballsToCheck = this.grid.getBallsInCell(ball.x, ball.y);
+        if (ballsToCheck.length > 1){
+            for (let otherBall of ballsToCheck){
+                if (ball !== otherBall){
+                    let dx = otherBall.x - ball.x;
+                    let dy = otherBall.y - ball.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    let minDistance = ball.r + otherBall.r;
 
-                // relative velocity
-                let dvx = ball2.vx - ball1.vx;
-                let dvy = ball2.vy - ball1.vy;
+                    if (distance <= minDistance){
+                        // normalize direction vector
+                        let nx = dx / distance;
+                        let ny = dy / distance;
 
-                // relative velocity and normalized direction dot product
-                let dotProduct = dvx * nx + dvy * ny;
+                        // relative velocity
+                        let dvx = otherBall.vx - ball.vx;
+                        let dvy = otherBall.vy - ball.vy;
 
-                // prevent overlap
-                let overlap = (minDistance - distance) / 2;
-                ball1.x -= nx * overlap;
-                ball1.y -= ny * overlap;
-                ball2.x += nx * overlap;
-                ball2.y += ny * overlap;
+                        // relative velocity and normalized direction dot product
+                        let dotProduct = dvx * nx + dvy * ny;
 
-                // elastic collision formula
-                let collisionScale = dotProduct * 2 / (ball1.r + ball2.r);
-                ball1.vx += collisionScale * nx * ball2.r;
-                ball1.vy += collisionScale * ny * ball2.r;
-                ball2.vx -= collisionScale * nx * ball1.r;
-                ball2.vy -= collisionScale * ny * ball1.r;
+                        // prevent overlap
+                        let overlap = (minDistance - distance) / 2;
+                        ball.x -= nx * overlap;
+                        ball.y -= ny * overlap;
+                        otherBall.x += nx * overlap;
+                        otherBall.y += ny * overlap;
+
+                        // elastic collision formula
+                        let collisionScale = dotProduct * 2 / (ball.r + otherBall.r);
+                        ball.vx += collisionScale * nx * otherBall.r;
+                        ball.vy += collisionScale * ny * otherBall.r;
+                        otherBall.vx -= collisionScale * nx * ball.r;
+                        otherBall.vy -= collisionScale * ny * ball.r;
+                    }
+                }
             }
         }
     }
-
 };
 
 Game.draw = function() {
