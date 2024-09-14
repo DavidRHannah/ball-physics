@@ -12,11 +12,14 @@ Game.initialize = function() {
         pos_x: window.innerWidth/2,
         pos_y: window.innerHeight/2,
         radius: 30,
-        vel_x: 8,
+        vel_x: 100,
         vel_y: -30,
         gravity: 0.6,
         bounce: 0.6,
-    };    
+        air_resistance: 0.99,
+        kinetic_friction: 0.99,
+        is_rolling: false,
+    };
 };
 
 Game.update = function(tick) {
@@ -24,6 +27,14 @@ Game.update = function(tick) {
     this.ball.vel_y += this.ball.gravity;
     this.ball.pos_x += this.ball.vel_x;
     this.ball.pos_y += this.ball.vel_y;
+    
+    this.ball.vel_x *= this.ball.air_resistance;
+    this.ball.vel_y *= this.ball.air_resistance;
+    
+    if (this.ball.is_rolling){
+        this.ball.vel_x *= this.ball.kinetic_friction;
+        this.ball.vel_y *= this.ball.kinetic_friction;
+    }
 
     /*--------------Edge Collisions--------------*/
     // Ceiling bound
@@ -35,6 +46,9 @@ Game.update = function(tick) {
     if (this.ball.pos_y + this.ball.radius >= window.innerHeight){
         this.ball.pos_y = window.innerHeight - this.ball.radius;
         this.ball.vel_y *= -this.ball.bounce;
+        this.ball.is_rolling = true;
+    } else{
+        this.ball.is_rolling = false;
     }
     // Right wall bound
     if (this.ball.pos_x + this.ball.radius >= window.innerWidth){
