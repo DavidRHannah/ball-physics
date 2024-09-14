@@ -25,17 +25,36 @@ class Triangle {
     rotateTowardsMouse(mouseX, mouseY){
         let dx = mouseX - this.x;
         let dy = mouseY - this.y;
-        this.rotation_angle = Math.atan2(dy, dx);
+        let target_angle = Math.atan2(dy, dx);
+
+        // Linear interpolation (lerp) between current angle and target angle
+        let lerpFactor = 0.1; // Adjust this value for faster or slower smoothing
+        this.rotation_angle = this.linear_interpolation(this.rotation_angle, target_angle, lerpFactor);
     }
+    linear_interpolation(start, end, t) {
+        return start + t * (end - start);
+    }
+
     handleInput(key){
-        if (key === 'w') 
-            this.vy = -this.speed;
-        if (key === 's') 
-            this.vy = this.speed;
-        if (key === 'a') 
-            this.vx = -this.speed;
-        if (key === 'd') 
-            this.vx = this.speed;
+        let targetVy = this.vy;
+        let targetVx = this.vx;
+        if (key === 'w') {
+            targetVy = -this.speed;
+        }
+        if (key === 's') {
+            targetVy = this.speed;
+        }
+        if (key === 'a') {
+            targetVx = -this.speed;
+        }
+        if (key === 'd') {
+            targetVx = this.speed;
+        }
+        
+        // Interpolate current velocity towards target velocity for smoother transitions
+        let lerpFactor = 0.7;  // Adjust this value to control how smooth the transitions are
+        this.vx = this.linear_interpolation(this.vx, targetVx, lerpFactor);
+        this.vy = this.linear_interpolation(this.vy, targetVy, lerpFactor);
     }
     draw(context){
         context.save();
