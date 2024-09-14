@@ -13,16 +13,13 @@ class Ball {
         this.is_rolling = false;
     }
     applyPhysics(){
-        // Gravity and velocity updates
         this.vy += this.gravity;
         this.x += this.vx;
         this.y += this.vy;
 
-        // Apply air resistance
         this.vx *= this.air_resistance;
         this.vy *= this.air_resistance;
 
-        // Apply rolling friction if the ball is rolling
         if (this.is_rolling) {
             this.vx *= this.kinetic_friction;
             this.vy *= this.kinetic_friction;
@@ -67,24 +64,24 @@ function getRandomArbitrary(min, max) {
 
 var Game = {};
 
-Game.fps = 30;
+Game.fps = 60;
 Game.maxFrameSkip = 10;
 Game.skipTicks = 1000 / Game.fps;
 
 Game.initialize = function() {
     this.entities = [];
-    this.entityCount = 10000;
+    this.entityCount = 3;
     this.viewport = document.body;
 
     for (let i = 0; i < this.entityCount; i++){
         color = "white";
         // r = getRandomArbitrary(4, 5);
-        r = 4;
+        r = 50;
         x = getRandomArbitrary(r, window.innerWidth);
         y = getRandomArbitrary(r, window.innerHeight);
         vx = getRandomArbitrary(-100,100);
         vy = getRandomArbitrary(-100,100);
-        gravity = 0.6;
+        gravity = 1;
         bounce = 0.6;
         air_resistance = 0.99;
         kinetic_friction = 0.99;
@@ -98,6 +95,46 @@ Game.update = function() {
         this.entities[i].applyPhysics();
         this.entities[i].handleCollisions();
     }
+    for (let i = 0; i < this.entityCount; i++) {
+        for (let j = i + 1; j < this.entityCount; j++) {
+            let ball1 = this.entities[i];
+            let ball2 = this.entities[j];
+            
+            let dx = ball2.x - ball1.x;
+            let dy = ball2.y - ball1.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            let minDistance = ball1.r + ball2.r;
+
+            // Check for colliding balls
+            if (distance+1 <= minDistance) {
+                // normalize direction vector
+                let nx = dx / distance;
+                let ny = dy / distance;
+
+                // relative velocity
+                let dvx = ball2.vx - ball1.vx;
+                let dvy = ball2.vy - ball1.vy;
+
+                // relative velocity and normalized direction dot product
+                let dotProduct = dvx * nx + dvy * ny;
+
+                // prevent overlap
+                let overlap = (minDistance - distance) / 2;
+                ball1.x -= nx * overlap;
+                ball1.y -= ny * overlap;
+                ball2.x += nx * overlap;
+                ball2.y += ny * overlap;
+
+                // elastic collision formula
+                let collisionScale = dotProduct * 2 / (ball1.r + ball2.r);
+                ball1.vx += collisionScale * nx * ball2.r;
+                ball1.vy += collisionScale * ny * ball2.r;
+                ball2.vx -= collisionScale * nx * ball1.r;
+                ball2.vy -= collisionScale * ny * ball1.r;
+            }
+        }
+    }
+
 };
 
 Game.draw = function() {
