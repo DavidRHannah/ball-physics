@@ -1,6 +1,69 @@
+class Ball {
+    constructor(color, x, y, r, vx, vy, gravity, bounce, air_resistance, kinetic_friction){
+        this.color = color;
+        this.x = x;
+        this.y = y;
+        this.r = r;
+        this.vx = vx;
+        this.vy = vy;
+        this.gravity = gravity;
+        this.bounce = bounce;
+        this.air_resistance = air_resistance;
+        this.kinetic_friction = kinetic_friction;
+        this.is_rolling = false;
+    }
+    applyPhysics(){
+        // Gravity and velocity updates
+        this.vy += this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Apply air resistance
+        this.vx *= this.air_resistance;
+        this.vy *= this.air_resistance;
+
+        // Apply rolling friction if the ball is rolling
+        if (this.is_rolling) {
+            this.vx *= this.kinetic_friction;
+            this.vy *= this.kinetic_friction;
+        }
+    }
+    handleCollisions(){
+        // Ceiling bound
+        if (this.y - this.r <= 0){
+            this.y = this.r;
+            this.vy *= -this.bounce;
+        }
+        // Floor bound
+        if (this.y + this.r >= window.innerHeight){
+            this.y = window.innerHeight - this.r;
+            this.vy *= -this.bounce;
+            this.is_rolling = true;
+        } else{
+            this.is_rolling = false;
+        }
+        // Right wall bound
+        if (this.x + this.r >= window.innerWidth){
+            this.x = window.innerWidth - this.r;
+            this.vx *= -this.bounce;
+        }
+        //Left wall bound
+        if (this.x - this.r <= 0){
+            this.x = this.r;
+            this.vx *= -this.bounce;
+        }
+    }
+    draw(context){
+        context.beginPath();
+        context.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        context.fillStyle = this.color;
+        context.fill();   
+    }
+}
+
 var Game = {};
 
-Game.fps = 140;
+Game.fps = 60;
 Game.maxFrameSkip = 10;
 Game.skipTicks = 1000 / Game.fps;
 
@@ -8,69 +71,30 @@ Game.initialize = function() {
     this.entities = [];
     this.viewport = document.body;
 
-    this.ball = {
-        pos_x: window.innerWidth/2,
-        pos_y: window.innerHeight/2,
-        radius: 30,
-        vel_x: 100,
-        vel_y: -30,
-        gravity: 0.6,
-        bounce: 0.6,
-        air_resistance: 0.99,
-        kinetic_friction: 0.99,
-        is_rolling: false,
-    };
+    
+    this.ball = new Ball(
+        "white",
+        window.innerWidth/2,
+        window.innerHeight/2,
+        30,
+        100,
+        -30,
+        0.6,
+        0.6,
+        0.99,
+        0.99,
+    );
 };
 
 Game.update = function(tick) {
-    // update position based on gravity and velocity
-    this.ball.vel_y += this.ball.gravity;
-    this.ball.pos_x += this.ball.vel_x;
-    this.ball.pos_y += this.ball.vel_y;
-    
-    this.ball.vel_x *= this.ball.air_resistance;
-    this.ball.vel_y *= this.ball.air_resistance;
-    
-    if (this.ball.is_rolling){
-        this.ball.vel_x *= this.ball.kinetic_friction;
-        this.ball.vel_y *= this.ball.kinetic_friction;
-    }
-
-    /*--------------Edge Collisions--------------*/
-    // Ceiling bound
-    if (this.ball.pos_y - this.ball.radius <= 0){
-        this.ball.pos_y = this.ball.radius;
-        this.ball.vel_y *= -this.ball.bounce;
-    }
-    // Floor bound
-    if (this.ball.pos_y + this.ball.radius >= window.innerHeight){
-        this.ball.pos_y = window.innerHeight - this.ball.radius;
-        this.ball.vel_y *= -this.ball.bounce;
-        this.ball.is_rolling = true;
-    } else{
-        this.ball.is_rolling = false;
-    }
-    // Right wall bound
-    if (this.ball.pos_x + this.ball.radius >= window.innerWidth){
-        this.ball.pos_x = window.innerWidth-this.ball.radius;
-        this.ball.vel_x *= -this.ball.bounce;
-    }
-    //Left wall bound
-    if (this.ball.pos_x - this.ball.radius <= 0){
-        this.ball.pos_x = this.ball.radius;
-        this.ball.vel_x *= -this.ball.bounce;
-    }
+    this.ball.applyPhysics();
+    this.ball.handleCollisions();
 };
 
 Game.draw = function() {
     let context = document.querySelector("canvas").getContext("2d");
     context.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    context.beginPath();
-    context.arc(this.ball.pos_x, this.ball.pos_y, this.ball.radius, 0, Math.PI * 2);
-    context.fillStyle = "lightgray";
-    context.fill();
-    // context.strokeStyle = "black";
-    // context.stroke();    
+    this.ball.draw(context);
 };
 
 Game.pause = function() {
