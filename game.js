@@ -61,40 +61,51 @@ class Ball {
     }
 }
 
+function getRandomArbitrary(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
 var Game = {};
 
-Game.fps = 60;
+Game.fps = 30;
 Game.maxFrameSkip = 10;
 Game.skipTicks = 1000 / Game.fps;
 
 Game.initialize = function() {
     this.entities = [];
+    this.entityCount = 10000;
     this.viewport = document.body;
 
-    
-    this.ball = new Ball(
-        "white",
-        window.innerWidth/2,
-        window.innerHeight/2,
-        30,
-        100,
-        -30,
-        0.6,
-        0.6,
-        0.99,
-        0.99,
-    );
+    for (let i = 0; i < this.entityCount; i++){
+        color = "white";
+        // r = getRandomArbitrary(4, 5);
+        r = 4;
+        x = getRandomArbitrary(r, window.innerWidth);
+        y = getRandomArbitrary(r, window.innerHeight);
+        vx = getRandomArbitrary(-100,100);
+        vy = getRandomArbitrary(-100,100);
+        gravity = 0.6;
+        bounce = 0.6;
+        air_resistance = 0.99;
+        kinetic_friction = 0.99;
+
+        this.entities[i] = new Ball(color, x, y, r, vx, vy, gravity, bounce, air_resistance, kinetic_friction);
+    }
 };
 
-Game.update = function(tick) {
-    this.ball.applyPhysics();
-    this.ball.handleCollisions();
+Game.update = function() {
+    for (let i = 0; i < this.entityCount; i++){
+        this.entities[i].applyPhysics();
+        this.entities[i].handleCollisions();
+    }
 };
 
 Game.draw = function() {
     let context = document.querySelector("canvas").getContext("2d");
     context.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    this.ball.draw(context);
+    for (let i = 0; i < this.entityCount; i++){
+        this.entities[i].draw(context);
+    }
 };
 
 Game.pause = function() {
