@@ -1,77 +1,89 @@
-class Triangle {
-    constructor(color, x, y, side_length, speed, vx, vy){
-        this.color = color;
-        this.x = x;
-        this.y = y;
-        this.side_length = side_length;
-        this.vx = vx;
-        this.vy = vy;
-        this.speed = speed;
-        this.rotation_angle = 0;
-    }
-    update(){
-        this.x += this.vx;
-        this.y += this.vy;
+// class Triangle {
+//     constructor(color, x, y, side_length, speed, vx, vy){
+//         this.color = color;
+//         this.x = x;
+//         this.y = y;
+//         this.side_length = side_length;
+//         this.vx = vx;
+//         this.vy = vy;
+//         this.speed = speed;
+//         this.rotation_angle = 0;
+//     }
+//     update(){
+//         this.x += this.vx;
+//         this.y += this.vy;
 
-        if (this.x - this.side_length <= 0) 
-            this.x = this.side_length;
-        if (this.x + this.side_length >= window.innerWidth) 
-            this.x = window.innerWidth - this.side_length;
-        if (this.y - this.side_length <= 0) 
-            this.y = this.side_length;
-        if (this.y + this.side_length >= window.innerHeight) 
-            this.y = window.innerHeight - this.side_length;
-    }
-    rotateTowardsMouse(mouseX, mouseY){
-        let dx = mouseX - this.x;
-        let dy = mouseY - this.y;
-        let target_angle = Math.atan2(dy, dx);
+//         if (this.x - this.side_length <= 0) 
+//             this.x = this.side_length;
+//         if (this.x + this.side_length >= window.innerWidth) 
+//             this.x = window.innerWidth - this.side_length;
+//         if (this.y - this.side_length <= 0) 
+//             this.y = this.side_length;
+//         if (this.y + this.side_length >= window.innerHeight) 
+//             this.y = window.innerHeight - this.side_length;
+//     }
 
-        // Linear interpolation (lerp) between current angle and target angle
-        let lerpFactor = 0.1; // Adjust this value for faster or slower smoothing
-        this.rotation_angle = this.linear_interpolation(this.rotation_angle, target_angle, lerpFactor);
-    }
-    linear_interpolation(start, end, t) {
-        return start + t * (end - start);
-    }
+//     /*
+//         min is min value
+//         max is max value
+//         t is interpolant
+//     */
+//     linear_interpolation(min, max, t) {
+//         return min + t * (max - min);
+//     }
 
-    handleInput(key){
-        let targetVy = this.vy;
-        let targetVx = this.vx;
-        if (key === 'w') {
-            targetVy = -this.speed;
-        }
-        if (key === 's') {
-            targetVy = this.speed;
-        }
-        if (key === 'a') {
-            targetVx = -this.speed;
-        }
-        if (key === 'd') {
-            targetVx = this.speed;
-        }
+//     rotateTowardsMouse(mouseX, mouseY){
+//         let dx = mouseX - this.x;
+//         let dy = mouseY - this.y;
+//         let target_angle = Math.atan2(dy, dx);
+
+//         // Linear interpolation (lerp) between current angle and target angle
+//         let interpolant = 0.1; // Adjust this value for faster or slower smoothing
+//         this.rotation_angle = this.linear_interpolation(this.rotation_angle, target_angle, interpolant);
+//     }
+    
+//     handleInput(key){
+//         let targetVy = this.vy;
+//         let targetVx = this.vx;
+
+//         if (key === 'Escape'){
+//             Game.pause();
+//             return;
+//         }
+//         if (key === 'w') {
+//             targetVy = -this.speed;
+//         }
+//         if (key === 's') {
+//             targetVy = this.speed;
+//         }
+//         if (key === 'a') {
+//             targetVx = -this.speed;
+//         }
+//         if (key === 'd') {
+//             targetVx = this.speed;
+//         }
         
-        // Interpolate current velocity towards target velocity for smoother transitions
-        let lerpFactor = 0.7;  // Adjust this value to control how smooth the transitions are
-        this.vx = this.linear_interpolation(this.vx, targetVx, lerpFactor);
-        this.vy = this.linear_interpolation(this.vy, targetVy, lerpFactor);
-    }
-    draw(context){
-        context.save();
-        context.translate(this.x, this.y);
-        context.rotate(this.rotation_angle);
+//         // Interpolate current velocity towards target velocity for smoother transitions
+//         let lerpFactor = 1;
+//         this.vx = this.linear_interpolation(this.vx, targetVx, lerpFactor);
+//         this.vy = this.linear_interpolation(this.vy, targetVy, lerpFactor);
+//     }
+//     draw(context){
+//         context.save();
+//         context.translate(this.x, this.y);
+//         context.rotate(this.rotation_angle);
         
-        context.beginPath();
-        context.moveTo(0, -this.side_length);
-        context.lineTo(-this.side_length, this.side_length);
-        context.lineTo(this.side_length, this.side_length);
-        context.closePath();
-        context.fillStyle = this.color;
-        context.fill();
+//         context.beginPath();
+//         context.moveTo(0, -this.side_length);
+//         context.lineTo(-this.side_length, this.side_length);
+//         context.lineTo(this.side_length, this.side_length);
+//         context.closePath();
+//         context.fillStyle = this.color;
+//         context.fill();
 
-        context.restore();
-    }
-}
+//         context.restore();
+//     }
+// }
 
 class Ball {
     constructor(color, x, y, r, vx, vy, gravity, bounce, air_resistance, kinetic_friction, epsilon){
@@ -87,6 +99,9 @@ class Ball {
         this.kinetic_friction = kinetic_friction;
         this.epsilon = epsilon;
         this.is_rolling = false;
+        this.maxSpeed = 10;
+        this.acceleration = 0.5;
+        this.keysPressed = {};
     }
     applyPhysics(){
         this.vy += this.gravity;
@@ -102,9 +117,6 @@ class Ball {
         }
         if (Math.abs(this.vx) < epsilon){
             vx = 0;   
-        }
-        if (this.vy < epsilon){
-            vy = 0;
         }
     }
     handleCollisions(){
@@ -132,7 +144,22 @@ class Ball {
             this.vx *= -this.bounce;
         }
     }
+    /*
+        min is min value
+        max is max value
+        t is interpolant
+    */
+    linear_interpolation(min, max, t){
+        return min + t * (max - min);
+    }
+    handleInput(){
+        if (this.keysPressed['w']) this.vy = Math.max(this.vy - this.acceleration, -this.maxSpeed);
+        if (this.keysPressed['s']) this.vy = Math.min(this.vy + this.acceleration, this.maxSpeed);
+        if (this.keysPressed['a']) this.vx = Math.max(this.vx - this.acceleration, -this.maxSpeed);
+        if (this.keysPressed['d']) this.vx = Math.min(this.vx + this.acceleration, this.maxSpeed);
+    }
     update(){
+        this.handleInput();
         this.applyPhysics();
         this.handleCollisions();
     }
@@ -177,7 +204,7 @@ class Grid {
 
 function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
-  }
+}
 
 var Game = {};
 
@@ -185,14 +212,16 @@ Game.fps = 60;
 Game.maxFrameSkip = 10;
 Game.skipTicks = 1000 / Game.fps;
 
-
 Game.initialize = function() {
-    let cellSize = 30;
+    let cellSize = 40;
     this.entityCount = 2;
     this.entities = [];
     this.grid = new Grid(cellSize);
     this.viewport = document.body;
-    
+    let r = 30;
+    this.player = new Ball("red", getRandomArbitrary(r, window.innerWidth), 
+                            getRandomArbitrary(r, window.innerHeight), 30, 
+                            0, 0, 0, 0, 0.9, 1, 0,);
     for (let i = 0; i < this.entityCount; i++){
         color = "white";
         r = 20;
@@ -201,25 +230,25 @@ Game.initialize = function() {
         vx = getRandomArbitrary(-100,100);
         vy = getRandomArbitrary(-100,100);
         gravity = 0;
-        bounce = 0.69;
+        bounce = 0.9;
         air_resistance = 1;
         kinetic_friction = 1;
         epsilon = 0;
 
         this.entities[i] = new Ball(color, x, y, r, vx, vy, gravity, bounce, air_resistance, kinetic_friction);
     }    
-
-    this.triangle = new Triangle("red", window.innerWidth/2, window.innerHeight/2, 20, 5, 0, 0);
+    this.entities.push(this.player);
+    this.entityCount+=1;
+    //this.triangle = new Triangle("red", window.innerWidth/2, window.innerHeight/2, 20, 5, 0, 0);
 };
 
 Game.update = function() {
-    this.triangle.update();
-
+    //this.player.update();
     for (let i = 0; i < this.entityCount; i++){
         this.entities[i].update();
         this.grid.addBall(this.entities[i]);
     }
-
+    
     for (let ball of this.entities){
         let ballsToCheck = this.grid.getBallsInCell(ball.x, ball.y);
         if (ballsToCheck.length > 1){
@@ -259,14 +288,13 @@ Game.update = function() {
                 }
             }
         }
-    }    
-
+    }
 };
 
 Game.draw = function() {
     let context = document.querySelector("canvas").getContext("2d");
     context.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    this.triangle.draw(context);
+    //this.player.draw(context);
     for (let i = 0; i < this.entityCount; i++){
         this.entities[i].draw(context);
     }
@@ -330,15 +358,15 @@ Game.run = (function() {
 })();
 
 document.addEventListener('keydown', function(event){
-    let key = event.key;
-    Game.triangle.handleInput(event.key, true);
+    Game.player.keysPressed[event.key] = true;
+    console.log(Game);
 });
-document.addEventListener('mousemove', function(event) {
-    let mouseX = event.clientX;
-    let mouseY = event.clientY;
-    Game.triangle.rotateTowardsMouse(mouseX, mouseY);
+document.addEventListener('keyup', function(event){
+    Game.player.keysPressed[event.key] = false;
 });
-// Initialize and run the game
+// document.addEventListener('mousemove', function(event) {
+//     Game.triangle.rotateTowardsMouse(event.clientX, event.clientY);
+// });
 document.addEventListener('DOMContentLoaded', function() {
     var canvas = document.createElement('canvas');
     canvas.width = window.innerWidth;
