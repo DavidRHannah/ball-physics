@@ -1,3 +1,59 @@
+class Triangle {
+    constructor(color, x, y, side_length, speed, vx, vy){
+        this.color = color;
+        this.x = x;
+        this.y = y;
+        this.side_length = side_length;
+        this.vx = vx;
+        this.vy = vy;
+        this.speed = speed;
+        this.rotation_angle = 0;
+    }
+    update(){
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x - this.side_length <= 0) 
+            this.x = this.side_length;
+        if (this.x + this.side_length >= window.innerWidth) 
+            this.x = window.innerWidth - this.side_length;
+        if (this.y - this.side_length <= 0) 
+            this.y = this.side_length;
+        if (this.y + this.side_length >= window.innerHeight) 
+            this.y = window.innerHeight - this.side_length;
+    }
+    rotateTowardsMouse(mouseX, mouseY){
+        let dx = mouseX - this.x;
+        let dy = mouseY - this.y;
+        this.rotation_angle = Math.atan2(dy, dx);
+    }
+    handleInput(key){
+        if (key === 'w') 
+            this.vy = -this.speed;
+        if (key === 's') 
+            this.vy = this.speed;
+        if (key === 'a') 
+            this.vx = -this.speed;
+        if (key === 'd') 
+            this.vx = this.speed;
+    }
+    draw(context){
+        context.save();
+        context.translate(this.x, this.y);
+        context.rotate(this.rotation_angle);
+        
+        context.beginPath();
+        context.moveTo(0, -this.side_length);
+        context.lineTo(-this.side_length, this.side_length);
+        context.lineTo(this.side_length, this.side_length);
+        context.closePath();
+        context.fillStyle = this.color;
+        context.fill();
+
+        context.restore();
+    }
+}
+
 class Ball {
     constructor(color, x, y, r, vx, vy, gravity, bounce, air_resistance, kinetic_friction, epsilon){
         this.color = color;
@@ -57,6 +113,10 @@ class Ball {
             this.vx *= -this.bounce;
         }
     }
+    update(){
+        this.applyPhysics();
+        this.handleCollisions();
+    }
     draw(context){
         context.beginPath();
         context.arc(this.x, this.y, this.r, 0, Math.PI * 2);
@@ -96,7 +156,6 @@ class Grid {
     }
 };
 
-
 function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
   }
@@ -107,13 +166,14 @@ Game.fps = 60;
 Game.maxFrameSkip = 10;
 Game.skipTicks = 1000 / Game.fps;
 
+
 Game.initialize = function() {
     let cellSize = 30;
-    this.entityCount = 40;
+    this.entityCount = 2;
     this.entities = [];
     this.grid = new Grid(cellSize);
     this.viewport = document.body;
-
+    
     for (let i = 0; i < this.entityCount; i++){
         color = "white";
         r = 20;
@@ -122,19 +182,22 @@ Game.initialize = function() {
         vx = getRandomArbitrary(-100,100);
         vy = getRandomArbitrary(-100,100);
         gravity = 0;
-        bounce = 0.6;
+        bounce = 0.69;
         air_resistance = 1;
         kinetic_friction = 1;
         epsilon = 0;
 
         this.entities[i] = new Ball(color, x, y, r, vx, vy, gravity, bounce, air_resistance, kinetic_friction);
-    }
+    }    
+
+    this.triangle = new Triangle("red", window.innerWidth/2, window.innerHeight/2, 20, 5, 0, 0);
 };
 
 Game.update = function() {
+    this.triangle.update();
+
     for (let i = 0; i < this.entityCount; i++){
-        this.entities[i].applyPhysics();
-        this.entities[i].handleCollisions();
+        this.entities[i].update();
         this.grid.addBall(this.entities[i]);
     }
 
@@ -177,12 +240,14 @@ Game.update = function() {
                 }
             }
         }
-    }
+    }    
+
 };
 
 Game.draw = function() {
     let context = document.querySelector("canvas").getContext("2d");
     context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    this.triangle.draw(context);
     for (let i = 0; i < this.entityCount; i++){
         this.entities[i].draw(context);
     }
@@ -245,6 +310,15 @@ Game.run = (function() {
     window.onEachFrame = onEachFrame;
 })();
 
+document.addEventListener('keydown', function(event){
+    let key = event.key;
+    Game.triangle.handleInput(event.key, true);
+});
+document.addEventListener('mousemove', function(event) {
+    let mouseX = event.clientX;
+    let mouseY = event.clientY;
+    Game.triangle.rotateTowardsMouse(mouseX, mouseY);
+});
 // Initialize and run the game
 document.addEventListener('DOMContentLoaded', function() {
     var canvas = document.createElement('canvas');
