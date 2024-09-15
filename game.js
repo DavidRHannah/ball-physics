@@ -214,7 +214,7 @@ Game.skipTicks = 1000 / Game.fps;
 
 Game.initialize = function() {
     let cellSize = 40;
-    this.entityCount = 10;
+    this.entityCount = 2;
     this.entities = [];
     this.grid = new Grid(cellSize);
     this.viewport = document.body;
